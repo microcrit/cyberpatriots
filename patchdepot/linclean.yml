@@ -1,0 +1,129 @@
+title: Crit's Ubuntu/Mint "Cyberpatriot Cleaner"
+description: Cleans preinstalled software that Cyberpatriot may install by default that may leave your system vulnerable.
+warning: Warnings.NONE
+runs_on:
+  - linux
+tags:
+  - cleaning
+  - security
+
+settings:
+  - id: clean_apache2
+    title: Clean Apache2
+    description: Removes Apache2 web server if installed.
+    type: boolean
+    default: false
+  - id: clean_mysql
+    title: Clean MySQL
+    description: Removes MySQL database server if installed.
+    type: boolean
+    default: false
+  - id: clean_php
+    title: Clean PHP
+    description: Removes PHP if installed.
+    type: boolean
+    default: false
+  - id: clean_ftp
+    title: Clean FTP Servers
+    description: Removes common FTP servers if installed.
+    type: boolean
+    default: false
+  - id: clean_nginx
+    title: Clean Nginx
+    description: Removes Nginx web server (or other reverse-proxy) if installed.
+    type: boolean
+    default: false
+  - id: clean_telnet
+    title: Clean Telnet
+    description: Removes Telnet server if installed.
+    type: boolean
+    default: false
+  - id: clean_rdp
+    title: Clean RDP
+    description: Removes RDP server if installed.
+    type: boolean
+    default: false
+  - id: os
+    title: Operating System
+    required: linux
+    description: The operating system on which to apply the settings.
+
+eval:
+  - use: cmd
+    when: clean_apache2
+    cmd: |
+      if command -v apache2 >/dev/null 2>&1; then
+        sudo apt-get remove -y apache2
+      fi
+  - use: cmd
+    when: clean_mysql
+    cmd: |
+      if command -v mysql >/dev/null 2>&1; then
+        sudo apt-get remove -y mysql-server
+      fi
+  - use: cmd
+    when: clean_php
+    cmd: |
+      if command -v php >/dev/null 2>&1; then
+        sudo apt-get remove -y php
+      fi
+  - use: cmd
+    when: clean_ftp
+    cmd: |
+      if command -v vsftpd >/dev/null 2>&1; then
+        sudo apt-get remove -y vsftpd
+      fi
+      if command -v proftpd >/dev/null 2>&1; then
+        sudo apt-get remove -y proftpd
+      fi
+  - use: cmd
+    when: clean_nginx
+    cmd: |
+      if command -v nginx >/dev/null 2>&1; then
+        sudo apt-get remove -y nginx
+      fi
+      if command -v haproxy >/dev/null 2>&1; then
+        sudo apt-get remove -y haproxy
+      fi
+      if command -v traefik >/dev/null 2>&1; then
+        sudo apt-get remove -y traefik
+      fi
+      if command -v caddy >/dev/null 2>&1; then
+        sudo apt-get remove -y caddy
+      fi
+  - use: cmd
+    when: clean_telnet
+    cmd: |
+      if command -v telnetd >/dev/null 2>&1; then
+        sudo apt-get remove -y telnetd
+      fi
+  - use: cmd
+    when: clean_rdp
+    cmd: |
+      if command -v xrdp >/dev/null 2>&1; then
+        sudo apt-get remove -y xrdp
+      fi
+      if command -v freerdp-server >/dev/null 2>&1; then
+        sudo apt-get remove -y freerdp-server
+      fi
+      if command -v rdesktop >/dev/null 2>&1; then
+        sudo apt-get remove -y rdesktop
+      fi
+      if command -v vino-server >/dev/null 2>&1; then
+        sudo apt-get remove -y vino
+      fi
+      if command -v x11vnc >/dev/null 2>&1; then
+        sudo apt-get remove -y x11vnc
+      fi
+      if command -v tightvncserver >/dev/null 2>&1; then
+        sudo apt-get remove -y tightvncserver
+      fi
+      if command -v tigervnc-standalone-server >/dev/null 2>&1; then
+        sudo apt-get remove -y tigervnc-standalone-server
+      fi
+      if command -v realvnc-vnc-server >/dev/null 2>&1; then
+        sudo apt-get remove -y realvnc-vnc-server
+      fi
+      if command -v remmina >/dev/null 2>&1; then
+        sudo apt-get remove -y remmina
+      fi

@@ -1,0 +1,104 @@
+title: Crit's Windows "Cyberpatriot Cleaner"
+description: Cleans preinstalled software that Cyberpatriot may install by default that may leave your system vulnerable.
+warning: Warnings.NONE
+runs_on:
+  - windows
+tags:
+  - cleaning
+  - security
+
+settings:
+  - id: clean_apache2
+    title: Clean Apache2
+    description: Removes Apache2 web server if installed.
+    type: boolean
+    default: false
+  - id: clean_mysql
+    title: Clean MySQL
+    description: Removes MySQL database server if installed.
+    type: boolean
+    default: false
+  - id: clean_php
+    title: Clean PHP
+    description: Removes PHP if installed.
+    type: boolean
+    default: false
+  - id: clean_ftp
+    title: Clean FTP Servers
+    description: Removes common FTP servers if installed.
+    type: boolean
+    default: false
+  - id: clean_nginx
+    title: Clean Nginx
+    description: Removes Nginx web server (or other reverse-proxy) if installed.
+    type: boolean
+    default: false
+  - id: clean_telnet
+    title: Clean Telnet
+    description: Removes Telnet server if installed.
+    type: boolean
+    default: false
+  - id: clean_rdp
+    title: Clean RDP
+    description: Removes RDP server if installed.
+    type: boolean
+    default: false
+  - id: os
+    title: Operating System
+    required: linux
+    description: The operating system on which to apply the settings.
+
+eval:
+  - use: cmd
+    when: clean_apache2
+    cmd: |
+      if Get-WindowsFeature -Name Web-Server | Where-Object {$_.InstallState -eq 'Installed'}; then
+        Uninstall-WindowsFeature -Name Web-Server -IncludeManagementTools
+      fi
+      Get-Package -Name 'Apache*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_mysql
+    cmd: |
+      if Get-WindowsFeature -Name MySQL* | Where-Object {$_.InstallState -eq 'Installed'}; then
+        Uninstall-WindowsFeature -Name MySQL* -IncludeManagementTools
+      fi
+      Get-Package -Name 'MySQL*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_php
+    cmd: |
+      Get-Package -Name 'PHP*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_ftp
+    cmd: |
+      if Get-WindowsFeature -Name Web-Ftp-Server | Where-Object {$_.InstallState -eq 'Installed'}; then
+        Uninstall-WindowsFeature -Name Web-Ftp-Server -IncludeManagementTools
+      fi
+      Get-Package -Name 'FTP*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'vsftpd*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'proftpd*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_nginx
+    cmd: |
+      Get-Package -Name 'nginx*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name "caddy*" -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name "haproxy*" -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name "traefik*" -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_telnet
+    cmd: |
+      if Get-WindowsFeature -Name Telnet-Server | Where-Object {$_.InstallState -eq 'Installed'}; then
+        Uninstall-WindowsFeature -Name Telnet-Server
+      fi
+      Get-Package -Name 'Telnet*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+  - use: cmd
+    when: clean_rdp
+    cmd: |
+      if Get-WindowsFeature -Name Remote-Desktop-Services | Where-Object {$_.InstallState -eq 'Installed'}; then
+        Uninstall-WindowsFeature -Name Remote-Desktop-Services -IncludeManagementTools
+      fi
+      Get-Package -Name 'RDP*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'xrdp*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'freerdp*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'rdesktop*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'tsclient*' -ErrorAction SilentlyContinue | Uninstall-Package -Force
+      Get-Package -Name 'remmina*' -ErrorAction SilentlyContinue | Uninstall-Package -Force

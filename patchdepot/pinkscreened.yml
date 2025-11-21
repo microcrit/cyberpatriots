@@ -2,7 +2,7 @@ title: Crit's "Pinkscreen Fixer"
 description: Attempts to prevent pink-screening on Cyberpatriots virtual machines.
 tags:
   - fixing
-warning: Warnings.UNSAFE
+warning: Warnings.NONE
 runs_on:
   - linux
 
