@@ -47,6 +47,7 @@ settings:
     title: Operating System
     required: linux
     description: The operating system on which to apply the settings.
+    type: os
 
 eval:
   - use: cmd
