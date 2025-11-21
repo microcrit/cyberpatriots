@@ -11,7 +11,7 @@ runs_on:
 settings:
   - id: spoof_vmware
     title: Spoof VMWare/CCS
-    description: Modifies system files to make a VirtualBox instance appear as a VMWare/CCS-compatible virtual machine. This may cause compatibility issues with certain applications or services.
+    description: Modifies system files to make a VirtualBox instance appear as a VMWare/CCS-compatible virtual machine. This will most likely disqualify you from CCS. Do not use this.
     type: boolean
     default: false
   - id: os

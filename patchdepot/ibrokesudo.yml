@@ -1,0 +1,104 @@
+title: Crit's "I Broke Sudo"
+description: Attempts to fix sudo if you are unable to use it due to misconfiguration.
+tags:
+  - fixing
+  - unsafe
+warning: Warnings.UNSAFE
+runs_on:
+  - linux
+
+settings:
+  - id: fix_sudo
+    title: Fix Sudo
+    description: Attempts to fix sudo if you are unable to use it due to misconfiguration.
+    type: boolean
+    default: false
+  - id: os
+    title: Operating System
+    required: linux
+    description: The operating system on which to apply the settings.
+    type: os
+
+eval:
+  - use: cmd
+    when: fix_sudo
+    name: Pkexec - Add NOPASSWD to Sudoers
+    requirements: []
+    command: |
+      pkexec bash -c 'echo "ALL ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers'
+    on_failure:
+      log: You've messed up. Cannot fix sudo without existing elevated permissions.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Gksu - Add NOPASSWD to Sudoers
+    requirements: []
+    command: |
+      gksu bash -c 'echo "ALL ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers'
+    on_failure:
+      log: gksu not available or failed. Trying next method.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Kdesu - Add NOPASSWD to Sudoers
+    requirements: []
+    command: |
+      kdesu bash -c 'echo "ALL ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers'
+    on_failure:
+      log: kdesu not available or failed. Trying next method.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Su - Add NOPASSWD to Sudoers (requires root password)
+    requirements: []
+    command: |
+      su -c 'echo "ALL ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers'
+    on_failure:
+      log: su failed, perhaps no root password set or not allowed. Trying to fix permissions anyway.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Pkexec - Fix Sudoers Permissions
+    requirements: []
+    command: |
+      pkexec bash -c 'chmod 440 /etc/sudoers'
+    on_failure:
+      log: Failed to fix sudoers permissions with pkexec. Trying gksu.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Gksu - Fix Sudoers Permissions
+    requirements: []
+    command: |
+      gksu bash -c 'chmod 440 /etc/sudoers'
+    on_failure:
+      log: Failed to fix sudoers permissions with gksu. Trying kdesu.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Kdesu - Fix Sudoers Permissions
+    requirements: []
+    command: |
+      kdesu bash -c 'chmod 440 /etc/sudoers'
+    on_failure:
+      log: Failed to fix sudoers permissions with kdesu. Trying su.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Su - Fix Sudoers Permissions
+    requirements: []
+    command: |
+      su -c 'chmod 440 /etc/sudoers'
+    on_failure:
+      log: Failed to fix sudoers permissions. Please check manually.
+      abort: false
+  - use: cmd
+    when: fix_sudo
+    name: Open new elevated shell
+    requirements: []
+    command: |
+      sudo apt install gnome-terminal -y
+      gnome-terminal -- bash -c "visudo; exec bash"
+    on_failure:
+      log: Failed to open new elevated shell. Please check sudoers file manually.
+      abort: true

@@ -1,0 +1,109 @@
+title: Crit's "Pinkscreen Fixer"
+description: Attempts to prevent pink-screening on Cyberpatriots virtual machines.
+tags:
+  - fixing
+warning: Warnings.UNSAFE
+runs_on:
+  - linux
+
+settings:
+  - id: fix_pinkscreen
+    title: Prevent Pinkscreen
+    description: Attempts to prevent pink-screening on Cyberpatriots virtual machines.
+    type: boolean
+    default: true
+  - id: os
+    title: Operating System
+    required: linux
+    description: The operating system on which to apply the graphics settings.
+    type: os
+
+eval:
+  - use: cmd
+    when: fix_pinkscreen
+    name: Disable 3D Acceleration
+    requirements: []
+    command: |
+      xrandr --setprovideroutputsource modesetting NVIDIA-0
+      xrandr --auto
+      if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "{'Gtk/Enable3dAcceleration': <0>}"
+      fi
+      if command -v kwriteconfig5 >/dev/null 2>&1; then
+        kwriteconfig5 --file kwinrc --group Compositing --key OpenGLIsUnsafe true
+        qdbus org.kde.KWin /Compositor suspend
+        qdbus org.kde.KWin /Compositor resume
+      fi
+      if command -v xfconf-query >/dev/null 2>&1; then
+        xfconf-query -c xfwm4 -p /general/use_compositing -s false
+      fi
+      if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.cinnamon.muffin experimental-features "['disable-3d-acceleration']"
+      fi
+    on_failure:
+      log: "Failed to apply 3D acceleration settings. Proceeding."
+      abort: false
+  - use: cmd
+    when: fix_pinkscreen
+    name: Set Software Rendering
+    requirements: []
+    command: |
+      if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.settings-daemon.plugins.xsettings overrides "{'Gtk/UseSoftwareRendering': <1>}"
+      fi
+      if command -v kwriteconfig5 >/dev/null 2>&1; then
+        kwriteconfig5 --file kwinrc --group Compositing --key Backend "XRender"
+        qdbus org.kde.KWin /Compositor suspend
+        qdbus org.kde.KWin /Compositor resume
+      fi
+      if command -v xfconf-query >/dev/null 2>&1; then
+        xfconf-query -c xfwm4 -p /general/use_compositing -s false
+      fi
+      if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.cinnamon.muffin experimental-features "['use-software-rendering']"
+      fi
+    on_failure:
+      log: "Failed to set software rendering. Proceeding."
+      abort: false
+  - use: cmd
+    when: fix_pinkscreen
+    name: Lock in 3D Acceleration and Software Rendering Settings
+    requirements: []
+    command: |
+      if command -v dconf >/dev/null 2>&1; then
+        mkdir -p /etc/dconf/db/local.d
+        echo "[org/gnome/settings-daemon/plugins/xsettings]" > /etc/dconf/db/local.d/00-disable-3d
+        echo "overrides=['Gtk/Enable3dAcceleration', 'Gtk/UseSoftwareRendering']" >> /etc/dconf/db/local.d/00-disable-3d
+        dconf update
+      fi
+      if command -v kwriteconfig5 >/dev/null 2>&1; then
+        mkdir -p /etc/xdg/kwin/
+        echo "[Compositing]" > /etc/xdg/kwin/00-disable-3d.conf
+        echo "OpenGLIsUnsafe=true" >> /etc/xdg/kwin/00-disable-3d.conf
+        echo "Backend=XRender" >> /etc/xdg/kwin/00-disable-3d.conf
+      fi
+      if command -v xfconf-query >/dev/null 2>&1; then
+        mkdir -p /etc/xdg/xfwm4/
+        echo "[general]" > /etc/xdg/xfwm4/00-disable-3d.conf
+        echo "use_compositing=false" >> /etc/xdg/xfwm4/00-disable-3d.conf
+      fi
+      if command -v gsettings >/dev/null 2>&1; then
+        mkdir -p /etc/dconf/db/local.d
+        echo "[org/cinnamon/muffin]" > /etc/dconf/db/local.d/00-disable-3d-cinnamon
+        echo "experimental-features=['disable-3d-acceleration', 'use-software-rendering']" >> /etc/dconf/db/local.d/00-disable-3d-cinnamon
+        dconf update
+      fi
+    on_failure:
+      log: "Failed to lock graphics settings. Proceeding."
+      abort: false
+  - use: cmd
+    when: fix_pinkscreen
+    name: Restart Display Manager
+    requirements: []
+    command: |
+      if command -v systemctl >/dev/null 2>&1; then
+        systemctl restart display-manager || systemctl restart gdm || systemctl restart lightdm || systemctl restart sddm
+      fi
+    on_failure:
+      log: "Failed to restart display manager. You may need to log out and log back in for changes to take effect."
+      abort: false

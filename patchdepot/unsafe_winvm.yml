@@ -1,0 +1,62 @@
+title: Crit's Unsafe VMWare Spoofing (Windows)
+description: Applies settings to make a functional VirtualBox instance appear as VMWare/CCS-compatible. You WILL be disqualified.
+tags:
+  - hardening
+  - unsafe
+  - ccs
+warning: Warnings.UNSAFE
+runs_on:
+  - windows
+
+settings:
+  - id: spoof_vmware
+    title: Spoof VMWare/CCS
+    description: Modifies system registry to make a VirtualBox instance appear as a VMWare/CCS-compatible virtual machine. This will most likely disqualify you from CCS. Do not use this.
+    default: false
+  - id: os
+    title: Operating System
+    required: windows
+    description: The operating system on which to apply the spoofing settings.
+    type: os
+
+eval:
+  - use: cmd
+    when: spoof_vmware
+    name: Create VMWare Tools Registry Key
+    requirements: []
+    command: reg add "HKLM\SOFTWARE\VMware, Inc.\VMware Tools" /f
+  - use: cmd
+    when: spoof_vmware
+    name: Set VMWare Tools InstallPath
+    requirements: []
+    command: reg add "HKLM\SOFTWARE\VMware, Inc.\VMware Tools" /v InstallPath /t REG_SZ /d "C:\Program Files\VMware\VMware Tools\" /f
+  - use: cmd
+    when: spoof_vmware
+    name: Set VMWare Tools Version
+    requirements: []
+    command: reg add "HKLM\SOFTWARE\VMware, Inc.\VMware Tools" /v Version /t REG_SZ /d "11.0.0" /f
+  - use: cmd
+    when: spoof_vmware
+    name: Set VMWare Tools ProductVersion
+    requirements: []
+    command: reg add "HKLM\SOFTWARE\VMware, Inc.\VMware Tools" /v ProductVersion /t REG_SZ /d "11.0.0 build-1234567" /f
+  - use: cmd
+    when: spoof_vmware
+    name: Spoof BIOS Vendor
+    requirements: []
+    command: reg add "HKLM\HARDWARE\DESCRIPTION\System\BIOS" /v BIOSVendor /t REG_SZ /d "VMware, Inc." /f
+  - use: cmd
+    when: spoof_vmware
+    name: Spoof BIOS Version
+    requirements: []
+    command: reg add "HKLM\HARDWARE\DESCRIPTION\System\BIOS" /v BIOSVersion /t REG_SZ /d "VMWABCD123" /f
+  - use: cmd
+    when: spoof_vmware
+    name: Spoof System Manufacturer
+    requirements: []
+    command: reg add "HKLM\HARDWARE\DESCRIPTION\System" /v SystemManufacturer /t REG_SZ /d "VMware, Inc." /f
+  - use: cmd
+    when: spoof_vmware
+    name: Spoof System Product Name
+    requirements: []
+    command: reg add "HKLM\HARDWARE\DESCRIPTION\System" /v SystemProductName /t REG_SZ /d "VMware Virtual Platform" /f
