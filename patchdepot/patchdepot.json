@@ -4,6 +4,8 @@
         "patchdepot/unsafe_vm.yml",
         "patchdepot/unsafe_winvm.yml",
         "patchdepot/ibrokesudo.yml",
-        "patchdepot/pinkscreened.yml"
+        "patchdepot/pinkscreened.yml",
+        "patchdepot/winclean.yml",
+        "patchdepot/linclean.yml"
     ]]
 ]
