@@ -1,0 +1,313 @@
+title: Crit's Unsafe Hardening (Linux)
+description: Applies various hardening settings that may be unsafe for some systems.
+tags:
+  - hardening
+  - unsafe
+warning: Warnings.UNSAFE
+runs_on:
+  - linux
+
+settings:
+  - id: enforce_strict_permissions
+    title: Enforce Strict Permissions
+    description: Enforces strict permissions on critical system files. This may cause issues with applications that require broader access.
+    type: boolean
+    default: true
+
+  - id: disable_ipv6
+    title: Disable IPv6
+    description: Disables IPv6 networking on the system. Disabling IPv6 may cause connectivity issues for applications that rely on it.
+    type: boolean
+    default: false
+
+  - id: disable_core_dumps
+    title: Disable Core Dumps
+    description: Disables core dumps on the system. Core dumps can be useful for debugging but may expose sensitive information.
+    type: boolean
+    default: true
+
+  - id: restrict_suid_binaries
+    title: Restrict SUID Binaries
+    description: Restricts the use of SUID binaries on the system. SUID binaries are executables that run with the permissions of the file owner instead of the user executing them.
+    type: boolean
+    default: true
+
+  - id: enforce_strict_sysctl
+    title: Enforce Strict Sysctl Settings
+    description: Enforces strict kernel settings on the system. The changed settings may impact system performance and behavior.
+    type: boolean
+    default: true
+  
+  - id: os
+    title: Operating System
+    required: linux
+    description: The operating system on which to apply the hardening settings.
+    type: os
+
+eval:
+  - use: cmd
+    when: enforce_strict_permissions
+    name: Enforce Strict Permissions on Critical Files
+    requirements:
+      - type: file_exists
+      - type: sudo
+    command: chmod 600 /etc/passwd /etc/shadow /etc/gshadow /etc/group /etc/sudoers
+  - use: patch
+    when: disable_ipv6
+    file: /etc/sysctl.conf
+    name: Disable IPv6 Networking
+    requirements:
+      - type: file_exists
+      - type: sudo
+    patch:
+      - type: replace
+        pattern: ^#?net.ipv6.conf.all.disable_ipv6\s*=\s*\d+
+        replacement: net.ipv6.conf.all.disable_ipv6 = 1
+      - type: replace
+        pattern: ^#?net.ipv6.conf.default.disable_ipv6\s*=\s*\d+
+        replacement: net.ipv6.conf.default.disable_ipv6 = 1
+  - use: cmd
+    when: disable_core_dumps
+    name: Disable Core Dumps
+    requirements:
+      - type: file_exists
+      - type: sudo
+    command: ulimit -c 0
+  - use: cmd
+    when: restrict_suid_binaries
+    name: Restrict SUID Binaries
+    requirements:
+      - type: file_exists
+      - type: sudo
+    command: find /usr/bin -perm 4000 -type f -exec chmod 755 {} \;
+  - use: patch
+    when: enforce_strict_sysctl
+    file: /etc/sysctl.conf
+    name: Enforce Strict Sysctl Settings
+    requirements:
+      - type: file_exists
+      - type: sudo
+    patch:
+      - type: replace
+        pattern: ^#?kernel.core_pattern\s*=\s*\S+
+        replacement: kernel.core_pattern = |/bin/false
+        name: Disable Core Dumps via Sysctl
+        not:
+          - type: pattern_exists
+            pattern: ^#?kernel.core_pattern\s*=\s*\S+
+            then:
+              type: insert
+              position: end
+              content: kernel.core_pattern = |/bin/false
+
+      - type: replace
+        pattern: ^#?vm.swappiness\s*=\s*\d+
+        replacement: vm.swappiness = 10
+        name: Set Swappiness (how often to swap memory to disk) to 10 (vs default 60)
+        not:
+          - type: pattern_exists
+            pattern: ^#?vm.swappiness\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: vm.swappiness = 10
+
+      - type: replace
+        pattern: ^#?fs.suid_dumpable\s*=\s*\d+
+        replacement: fs.suid_dumpable = 0
+        name: Disable SUID Core Dumps
+        not:
+          - type: pattern_exists
+            pattern: ^#?fs.suid_dumpable\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: fs.suid_dumpable = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.ip_forward\s*=\s*\d+
+        replacement: net.ipv4.ip_forward = 0
+        name: Disable IP Forwarding
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.ip_forward\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.ip_forward = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.all.accept_source_route\s*=\s*\d+
+        replacement: net.ipv4.conf.all.accept_source_route = 0
+        name: Disable Accepting Source Routes (all)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.all.accept_source_route\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.all.accept_source_route = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.default.accept_source_route\s*=\s*\d+
+        replacement: net.ipv4.conf.default.accept_source_route = 0
+        name: Disable Accepting Source Routes (default)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.default.accept_source_route\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.default.accept_source_route = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.all.accept_redirects\s*=\s*\d+
+        replacement: net.ipv4.conf.all.accept_redirects = 0
+        name: Disable Accepting ICMP Redirects (all)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.all.accept_redirects\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.all.accept_redirects = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.default.accept_redirects\s*=\s*\d+
+        replacement: net.ipv4.conf.default.accept_redirects = 0
+        name: Disable Accepting ICMP Redirects (default)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.default.accept_redirects\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.default.accept_redirects = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.all.secure_redirects\s*=\s*\d+
+        replacement: net.ipv4.conf.all.secure_redirects = 0
+        name: Disable Accepting Secure ICMP Redirects (all)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.all.secure_redirects\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.all.secure_redirects = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.default.secure_redirects\s*=\s*\d+
+        replacement: net.ipv4.conf.default.secure_redirects = 0
+        name: Disable Accepting Secure ICMP Redirects (default)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.default.secure_redirects\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.default.secure_redirects = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.icmp_echo_ignore_broadcasts\s*=\s*\d+
+        replacement: net.ipv4.icmp_echo_ignore_broadcasts = 1
+        name: Ignore ICMP Broadcast Echo Requests
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.icmp_echo_ignore_broadcasts\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.icmp_echo_ignore_broadcasts = 1
+
+      - type: replace
+        pattern: ^#?net.ipv4.icmp_ignore_bogus_error_responses\s*=\s*\d+
+        replacement: net.ipv4.icmp_ignore_bogus_error_responses = 1
+        name: Ignore Bogus ICMP Error Responses
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.icmp_ignore_bogus_error_responses\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+      - type: replace
+        pattern: ^#?net.ipv4.tcp_syncookies\s*=\s*\d+
+        replacement: net.ipv4.tcp_syncookies = 1
+        name: Enable TCP SYN Cookies
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.tcp_syncookies\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.tcp_syncookies = 1
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.all.rp_filter\s*=\s*\d+
+        replacement: net.ipv4.conf.all.rp_filter = 1
+        name: Enable Reverse Path Filtering (all)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.all.rp_filter\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.all.rp_filter = 1
+
+      - type: replace
+        pattern: ^#?net.ipv4.conf.default.rp_filter\s*=\s*\d+
+        replacement: net.ipv4.conf.default.rp_filter = 1
+        name: Enable Reverse Path Filtering (default)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.default.rp_filter\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.default.rp_filter = 1
+  
+      - type: replace
+        pattern: ^#?net.ipv4.conf.all.log_martians\s*=\s*\d+
+        replacement: net.ipv4.conf.all.log_martians = 1
+        name: Enable Logging of Martian Packets (all)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.conf.all.log_martians\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.conf.all.log_martians = 1
+
+      - type: replace
+        pattern: ^#?net.ipv4.tcp_timestamps\s*=\s*\d+
+        replacement: net.ipv4.tcp_timestamps = 0
+        name: Disable TCP Timestamps (sequence number protection)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.tcp_timestamps\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.tcp_timestamps = 0
+
+      - type: replace
+        pattern: ^#?net.ipv4.tcp_window_scaling\s*=\s*\d+
+        replacement: net.ipv4.tcp_window_scaling = 0
+        name: Disable TCP Window Scaling (to prevent certain attacks)
+        not:
+          - type: pattern_exists
+            pattern: ^#?net.ipv4.tcp_window_scaling\s*=\s*\d+
+            then:
+              type: insert
+              position: end
+              content: net.ipv4.tcp_window_scaling = 0
+
+  - use: cmd
+    when: enforce_strict_sysctl
+    name: Apply Sysctl Settings
+    requirements:
+      - type: file_exists
+      - type: sudo
+    command: sysctl -p /etc/sysctl.conf
